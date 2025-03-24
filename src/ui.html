@@ -29,6 +29,15 @@
         background: #1089d9; 
       }
       
+      .auto-fix-btn {
+        background-color: #45a049;
+        margin-top: 10px;
+      }
+      
+      .auto-fix-btn:hover {
+        background-color: #3d8b40;
+      }
+      
       .results {
         max-height: 360px;
         overflow-y: auto;
@@ -53,30 +62,46 @@
       
       .node-info {
         margin-bottom: 8px;
-      }
-      
-      .color-preview {
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        margin-top: 4px;
       }
       
-      .color-box {
-        width: 20px;
-        height: 20px;
+      .node-name {
+        font-weight: bold;
         margin-right: 8px;
-        border: 1px solid #e0e0e0;
-        border-radius: 2px;
       }
       
-      .color-value {
-        font-family: monospace;
+      .issue-item {
+        margin-top: 8px;
+        padding: 8px;
+        background-color: #ffefef;
+        border-radius: 4px;
+        border-left: 3px solid #ff6b6b;
+      }
+      
+      .issue-item.fixed {
+        background-color: #efffef;
+        border-left: 3px solid #4CAF50;
+      }
+      
+      .issue-message {
+        font-size: 13px;
+        margin-bottom: 4px;
+      }
+      
+      .issue-details {
         font-size: 12px;
+        color: #666;
+        margin-top: 4px;
       }
       
       .node-type {
         font-size: 12px;
         color: #666;
+        padding: 4px 8px;
+        background-color: #eee;
+        border-radius: 10px;
       }
       
       .no-results {
@@ -119,26 +144,6 @@
         color: #333;
       }
       
-      .hidden-node {
-        opacity: 0.5;
-      }
-      
-      .visible-indicator {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        margin-right: 5px;
-      }
-      
-      .visible-yes {
-        background-color: #3eca7a;
-      }
-      
-      .visible-no {
-        background-color: #f24822;
-      }
-      
       .alert {
         padding: 12px;
         background-color: #fff4e5;
@@ -148,17 +153,93 @@
         font-size: 13px;
       }
       
+      .success {
+        padding: 12px;
+        background-color: #e5ffed;
+        border-radius: 4px;
+        margin-bottom: 16px;
+        border-left: 4px solid #4CAF50;
+        font-size: 13px;
+      }
+      
       .search-count {
         margin-top: 8px;
         font-size: 12px;
         color: #666;
       }
+      
+      .issue-type {
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 10px;
+        background-color: #f7f7f7;
+        color: #555;
+        margin-right: 4px;
+      }
+      
+      .recommendations {
+        margin-top: 12px;
+        font-size: 13px;
+        color: #007bff;
+      }
+      
+      .fixed-badge {
+        display: inline-block;
+        background-color: #4CAF50;
+        color: white;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 10px;
+        margin-left: 8px;
+      }
+      
+      .tabs {
+        display: flex;
+        margin-bottom: 16px;
+        border-bottom: 1px solid #ddd;
+      }
+      
+      .tab {
+        padding: 8px 16px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+      }
+      
+      .tab.active {
+        border-bottom: 2px solid #18A0FB;
+        font-weight: bold;
+      }
+      
+      .tab-content {
+        display: none;
+      }
+      
+      .tab-content.active {
+        display: block;
+      }
+      
+      .comparison {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      
+      .comparison-column {
+        width: 48%;
+      }
+      
+      .comparison-title {
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 8px;
+        text-align: center;
+      }
     </style>
   </head>
   <body>
-    <h2>디자인 시스템 비준수 컬러 검색</h2>
+    <h2>오토 레이아웃 검사기</h2>
     <div class="info-text">
-      Variable이 적용되지 않은 컬러 노드만 찾아 표시합니다. 이 노드들은 디자인 시스템에 정의된 컬러 토큰을 사용하지 않고 있어 일관성에 문제가 있을 수 있습니다.
+      선택한 디자인 요소의 오토 레이아웃 상태를 검사합니다. 이 도구는 디자인이 오토 레이아웃을 활용한 반응형 디자인 원칙을 잘 따르고 있는지 평가합니다.
     </div>
     
     <div class="options">
@@ -166,49 +247,119 @@
         <input type="checkbox" id="exclude-hidden" checked>
         <label for="exclude-hidden" class="checkbox-label">숨겨진 노드 제외</label>
       </div>
-      
-      <div class="checkbox-container">
-        <input type="checkbox" id="selected-only">
-        <label for="selected-only" class="checkbox-label">선택한 노드만 검사 (및 하위 노드 포함)</label>
+    </div>
+    
+    <button id="check-btn">오토 레이아웃 검사하기</button>
+    <button id="fix-btn" class="auto-fix-btn" style="display: none;">자동 수정 적용 (안전하게 복제)</button>
+    
+    <div id="alert" class="alert" style="display: none;"></div>
+    <div id="success" class="success" style="display: none;"></div>
+    
+    <div id="status" class="searching" style="display: none;">
+      오토 레이아웃 상태 확인 중...
+    </div>
+    
+    <div id="tabs" class="tabs" style="display: none;">
+      <div id="original-tab" class="tab active">원본 결과</div>
+      <div id="fixed-tab" class="tab">수정된 결과</div>
+      <div id="comparison-tab" class="tab">비교</div>
+    </div>
+    
+    <div id="original-content" class="tab-content active">
+      <div id="results" class="results" style="display: none;">
+        <!-- 검사 결과가 여기에 표시됩니다 -->
       </div>
     </div>
     
-    <button id="search-btn">비준수 컬러 노드 검색</button>
-    
-    <div id="alert" class="alert" style="display: none;"></div>
-    
-    <div id="status" class="searching" style="display: none;">
-      Variable이 적용되지 않은 컬러 노드 검색 중...
+    <div id="fixed-content" class="tab-content">
+      <div id="fixed-results" class="results">
+        <!-- 수정된 결과가 여기에 표시됩니다 -->
+      </div>
     </div>
     
-    <div id="results" class="results" style="display: none;">
-      <!-- 검색 결과가 여기에 표시됩니다 -->
+    <div id="comparison-content" class="tab-content">
+      <div class="comparison">
+        <div class="comparison-column">
+          <div class="comparison-title">원본</div>
+          <div id="comparison-original" class="results">
+            <!-- 원본 결과가 여기에 표시됩니다 -->
+          </div>
+        </div>
+        <div class="comparison-column">
+          <div class="comparison-title">수정됨</div>
+          <div id="comparison-fixed" class="results">
+            <!-- 수정된 결과가 여기에 표시됩니다 -->
+          </div>
+        </div>
+      </div>
     </div>
     
     <div id="search-count" class="search-count" style="display: none;"></div>
     
     <script>
       // DOM 요소 참조
-      const searchButton = document.getElementById('search-btn');
+      const checkButton = document.getElementById('check-btn');
+      const fixButton = document.getElementById('fix-btn');
       const statusElement = document.getElementById('status');
       const resultsElement = document.getElementById('results');
+      const fixedResultsElement = document.getElementById('fixed-results');
       const alertElement = document.getElementById('alert');
+      const successElement = document.getElementById('success');
       const searchCountElement = document.getElementById('search-count');
       const excludeHiddenCheckbox = document.getElementById('exclude-hidden');
-      const selectedOnlyCheckbox = document.getElementById('selected-only');
+      const tabsElement = document.getElementById('tabs');
+      const comparisonOriginalElement = document.getElementById('comparison-original');
+      const comparisonFixedElement = document.getElementById('comparison-fixed');
       
-      // RGB 값을 HEX 문자열로 변환하는 함수
-      function rgbToHex(r, g, b) {
-        r = Math.round(r * 255);
-        g = Math.round(g * 255);
-        b = Math.round(b * 255);
-        return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+      // 탭 참조
+      const originalTab = document.getElementById('original-tab');
+      const fixedTab = document.getElementById('fixed-tab');
+      const comparisonTab = document.getElementById('comparison-tab');
+      const originalContent = document.getElementById('original-content');
+      const fixedContent = document.getElementById('fixed-content');
+      const comparisonContent = document.getElementById('comparison-content');
+      
+      // 탭 전환 이벤트 설정
+      originalTab.addEventListener('click', () => {
+        setActiveTab('original');
+      });
+      
+      fixedTab.addEventListener('click', () => {
+        setActiveTab('fixed');
+      });
+      
+      comparisonTab.addEventListener('click', () => {
+        setActiveTab('comparison');
+      });
+      
+      // 활성 탭 설정 함수
+      function setActiveTab(tabId) {
+        // 모든 탭과 컨텐츠 비활성화
+        originalTab.classList.remove('active');
+        fixedTab.classList.remove('active');
+        comparisonTab.classList.remove('active');
+        originalContent.classList.remove('active');
+        fixedContent.classList.remove('active');
+        comparisonContent.classList.remove('active');
+        
+        // 선택한 탭과 컨텐츠 활성화
+        if (tabId === 'original') {
+          originalTab.classList.add('active');
+          originalContent.classList.add('active');
+        } else if (tabId === 'fixed') {
+          fixedTab.classList.add('active');
+          fixedContent.classList.add('active');
+        } else if (tabId === 'comparison') {
+          comparisonTab.classList.add('active');
+          comparisonContent.classList.add('active');
+        }
       }
       
       // 경고 메시지 표시
       function showAlert(message) {
         alertElement.textContent = message;
         alertElement.style.display = 'block';
+        successElement.style.display = 'none';
         
         // 3초 후 알림 숨기기
         setTimeout(() => {
@@ -216,23 +367,184 @@
         }, 3000);
       }
       
-      // 컬러 노드 검색 시작
-      searchButton.onclick = () => {
+      // 성공 메시지 표시
+      function showSuccess(message) {
+        successElement.textContent = message;
+        successElement.style.display = 'block';
+        alertElement.style.display = 'none';
+      }
+      
+      // 노드 타입에 맞는 아이콘 반환
+      function getNodeTypeIcon(type) {
+        switch(type) {
+          case 'FRAME': return '🖼️';
+          case 'GROUP': return '🗂️';
+          case 'COMPONENT': return '⚛️';
+          case 'INSTANCE': return '📋';
+          case 'COMPONENT_SET': return '🔄';
+          case 'TEXT': return '📝';
+          case 'RECTANGLE': return '▬';
+          case 'ELLIPSE': return '⭕';
+          default: return '🔹';
+        }
+      }
+      
+      // 이슈 추천사항 제공
+      function getRecommendation(issueType) {
+        switch(issueType) {
+          case 'NO_AUTO_LAYOUT':
+            return '오토 레이아웃을 적용하여 반응형 디자인을 지원하세요.';
+          case 'FIXED_PRIMARY_AXIS':
+            return '주 축을 "Hug contents" 또는 "Fill container"로 변경하세요.';
+          case 'FIXED_COUNTER_AXIS':
+            return '보조 축을 "Hug contents" 또는 "Fill container"로 변경하세요.';
+          case 'FIXED_ITEM_SPACING':
+            return '고정 간격보다 유연한 간격 배치를 고려하세요.';
+          case 'ASYMMETRIC_PADDING':
+            return '가능하면 대칭적인 패딩을 적용하세요.';
+          case 'GROUP_NOT_FRAME':
+            return '그룹 대신 프레임과 오토 레이아웃을 사용하세요.';
+          case 'SCALE_CONSTRAINT':
+            return 'SCALE 대신 LEFT/RIGHT 또는 TOP/BOTTOM 조합을 사용하세요.';
+          case 'CENTER_CONSTRAINT':
+            return 'CENTER 대신 LEFT/RIGHT 또는 TOP/BOTTOM 조합을 사용하세요.';
+          case 'ABSOLUTE_POSITION':
+            return '오토 레이아웃 내에서 절대 위치 사용을 줄이고 상대적 배치를 사용하세요.';
+          default:
+            return '오토 레이아웃 원칙에 맞게 수정하세요.';
+        }
+      }
+      
+      // 이슈 세부 정보 표시
+      function formatIssueDetails(issue) {
+        if (issue.type === 'ASYMMETRIC_PADDING' && issue.values) {
+          return `패딩 값: 위 ${issue.values.top || 0}px, 우 ${issue.values.right || 0}px, 아래 ${issue.values.bottom || 0}px, 좌 ${issue.values.left || 0}px`;
+        }
+        
+        if (issue.type === 'FIXED_ITEM_SPACING' && issue.value !== undefined) {
+          return `고정 간격: ${issue.value}px`;
+        }
+        
+        if ((issue.type === 'SCALE_CONSTRAINT' || issue.type === 'CENTER_CONSTRAINT') && issue.values) {
+          return `가로: ${issue.values.horizontal}, 세로: ${issue.values.vertical}`;
+        }
+        
+        return '';
+      }
+      
+      // 검사 결과를 HTML로 변환하는 함수
+      function createResultsHTML(results, isFixed = false) {
+        if (results.length === 0) {
+          return `<div class="no-results">이슈가 발견되지 않았습니다.</div>`;
+        }
+        
+        let resultsHTML = '';
+        
+        results.forEach(result => {
+          resultsHTML += `
+            <div class="result-item" onclick="focusNode('${result.id}')">
+              <div class="node-info">
+                <div>
+                  <span class="node-name">${result.name}</span>
+                  <span class="node-type">${getNodeTypeIcon(result.type)} ${result.type}</span>
+                  ${isFixed ? '<span class="fixed-badge">수정됨</span>' : ''}
+                </div>
+              </div>
+          `;
+          
+          // 각 이슈 정보 추가
+          result.issues.forEach(issue => {
+            resultsHTML += `
+              <div class="issue-item ${isFixed ? 'fixed' : ''}">
+                <div class="issue-message">
+                  <span class="issue-type">${issue.type}</span> ${issue.message}
+                </div>
+            `;
+            
+            const details = formatIssueDetails(issue);
+            if (details) {
+              resultsHTML += `<div class="issue-details">${details}</div>`;
+            }
+            
+            // 추천사항 추가
+            resultsHTML += `
+              <div class="recommendations">💡 ${getRecommendation(issue.type)}</div>
+            </div>
+            `;
+          });
+          
+          resultsHTML += `</div>`;
+        });
+        
+        return resultsHTML;
+      }
+      
+      // 검사 결과를 표시하는 함수
+      function displayResults(results) {
+        if (results.length > 0) {
+          // 총 이슈 갯수 계산
+          let totalIssues = 0;
+          results.forEach(result => {
+            totalIssues += result.issues.length;
+          });
+          
+          // 결과 HTML 생성
+          resultsElement.innerHTML = createResultsHTML(results);
+          searchCountElement.textContent = `${results.length}개 노드에서 총 ${totalIssues}개의 이슈가 발견되었습니다.`;
+          
+          // 자동 수정 버튼 표시
+          fixButton.style.display = 'block';
+          
+        } else {
+          resultsElement.innerHTML = `<div class="no-results">모든 선택된 노드가 오토 레이아웃 반응형 디자인 원칙을 잘 따르고 있습니다! 👍</div>`;
+          searchCountElement.textContent = '이슈가 발견되지 않았습니다.';
+          
+          // 자동 수정 버튼 숨기기
+          fixButton.style.display = 'none';
+        }
+      }
+      
+      // 오토 레이아웃 검사 시작
+      checkButton.onclick = () => {
         statusElement.style.display = 'block';
         resultsElement.style.display = 'none';
         searchCountElement.style.display = 'none';
         alertElement.style.display = 'none';
+        successElement.style.display = 'none';
+        fixButton.style.display = 'none';
+        tabsElement.style.display = 'none';
+        
+        // 탭 초기화
+        setActiveTab('original');
         
         // 옵션 값 가져오기
         const excludeHidden = excludeHiddenCheckbox.checked;
-        const selectedNodesOnly = selectedOnlyCheckbox.checked;
         
         // 부모 프레임(Figma)에 메시지 전송
         parent.postMessage({ 
           pluginMessage: { 
-            type: 'search-color-nodes',
-            excludeHidden: excludeHidden,
-            selectedNodesOnly: selectedNodesOnly
+            type: 'check-auto-layout',
+            excludeHidden: excludeHidden
+          } 
+        }, '*');
+      };
+      
+      // 자동 수정 시작
+      fixButton.onclick = () => {
+        statusElement.style.display = 'block';
+        statusElement.textContent = '노드를 복제하고 자동 수정 중...';
+        alertElement.style.display = 'none';
+        successElement.style.display = 'none';
+        fixButton.style.display = 'none';
+        
+        // 옵션 값 가져오기
+        const excludeHidden = excludeHiddenCheckbox.checked;
+        
+        // 부모 프레임(Figma)에 메시지 전송
+        parent.postMessage({ 
+          pluginMessage: { 
+            type: 'clone-and-fix',
+            excludeHidden: excludeHidden
           } 
         }, '*');
       };
@@ -247,110 +559,105 @@
         }, '*');
       }
       
-      // 노드의 컬러 프리뷰 HTML 생성
-      function createColorPreviewHTML(color) {
-        const hexColor = rgbToHex(color.r, color.g, color.b);
-        const rgbValues = `R: ${Math.round(color.r * 255)}, G: ${Math.round(color.g * 255)}, B: ${Math.round(color.b * 255)}`;
-        const opacity = color.opacity !== undefined ? `, 불투명도: ${Math.round(color.opacity * 100)}%` : '';
-        
-        return `
-          <div class="color-preview">
-            <div class="color-box" style="background-color: ${hexColor}; opacity: ${color.opacity || 1}"></div>
-            <div class="color-value">${hexColor} (${rgbValues}${opacity})</div>
-          </div>
-        `;
-      }
-      
-      // Figma로부터 메시지 수신
+      // Figma로부터 메시지 받기
       window.onmessage = (event) => {
-        const message = event.data.pluginMessage;
+        const msg = event.data.pluginMessage;
+        if (!msg) return;
         
-        if (message.type === 'no-selection') {
-          // 선택된 노드가 없는 경우 알림
-          statusElement.style.display = 'none';
-          showAlert(message.message);
-          return;
-        }
-        
-        else if (message.type === 'color-nodes-result') {
+        // 오토 레이아웃 검사 결과
+        if (msg.type === 'auto-layout-results') {
           statusElement.style.display = 'none';
           resultsElement.style.display = 'block';
-          
-          const nodes = message.nodes;
-          const isSelectedNodesOnly = message.selectedNodesOnly;
-          
-          // 검색 결과 카운트 표시
           searchCountElement.style.display = 'block';
-          const searchScope = isSelectedNodesOnly ? '선택한 노드에서' : '현재 페이지에서';
-          searchCountElement.textContent = `${searchScope} ${nodes.length}개의 비준수 컬러 노드를 찾았습니다.`;
           
-          if (nodes.length === 0) {
-            const noResultsMessage = isSelectedNodesOnly 
-              ? '선택한 노드에서 Variable이 적용되지 않은 컬러 노드가 없습니다.'
-              : 'Variable이 적용되지 않은 컬러 노드가 없습니다. 모든 컬러가 디자인 시스템을 준수하고 있습니다!';
-            
-            resultsElement.innerHTML = `<div class="no-results">${noResultsMessage}</div>`;
-            return;
-          }
+          const results = msg.results || [];
           
-          // 결과 목록 생성
-          let resultsHTML = '';
-          
-          nodes.forEach(node => {
-            let colorPreviewsHTML = '';
-            
-            node.colors.forEach(colorInfo => {
-              const typeLabel = colorInfo.type === 'fill' ? '채우기' : '테두리';
-              colorPreviewsHTML += `
-                <div>
-                  <small>${typeLabel} #${colorInfo.index + 1}</small>
-                  ${createColorPreviewHTML(colorInfo.color)}
-                </div>
-              `;
-            });
-            
-            // 노드 가시성 상태에 따라 클래스 추가
-            const visibilityClass = node.visible ? '' : 'hidden-node';
-            const visibilityIndicator = node.visible ? 
-              '<span class="visible-indicator visible-yes" title="보이는 노드"></span>' : 
-              '<span class="visible-indicator visible-no" title="숨겨진 노드"></span>';
-            
-            resultsHTML += `
-              <div class="result-item ${visibilityClass}" data-node-id="${node.id}">
-                <div class="node-info">
-                  <strong>${visibilityIndicator}${node.name}</strong>
-                  <div class="node-type">${node.type}</div>
-                </div>
-                ${colorPreviewsHTML}
-              </div>
-            `;
-          });
-          
-          resultsElement.innerHTML = resultsHTML;
-          
-          // 노드 클릭 이벤트 리스너 추가
-          document.querySelectorAll('.result-item').forEach(item => {
-            item.addEventListener('click', () => {
-              const nodeId = item.getAttribute('data-node-id');
-              focusNode(nodeId);
-            });
-          });
+          // 원본 결과 표시
+          displayResults(results);
         }
         
-        else if (message.type === 'node-focused') {
-          // 포커스된 노드 표시 (옵션)
-          const nodeId = message.nodeId;
-          document.querySelectorAll('.result-item').forEach(item => {
-            if (item.getAttribute('data-node-id') === nodeId) {
-              item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              item.style.backgroundColor = '#e6f7ff';
-              setTimeout(() => {
-                item.style.backgroundColor = '';
-              }, 1500);
-            }
+        // 자동 수정 시작
+        else if (msg.type === 'fix-started') {
+          statusElement.style.display = 'block';
+          statusElement.textContent = msg.message;
+        }
+        
+        // 자동 수정 완료
+        else if (msg.type === 'fix-completed') {
+          statusElement.style.display = 'none';
+          showSuccess(msg.message);
+          searchCountElement.style.display = 'block';
+          
+          const originalResults = msg.originalResults || [];
+          const fixedResults = msg.fixedResults || [];
+          
+          // 탭 표시
+          tabsElement.style.display = 'flex';
+          
+          // 원본 결과 표시
+          resultsElement.innerHTML = createResultsHTML(originalResults);
+          
+          // 수정된 결과 표시
+          fixedResultsElement.innerHTML = createResultsHTML(fixedResults, true);
+          
+          // 비교 탭 내용 채우기
+          comparisonOriginalElement.innerHTML = createResultsHTML(originalResults);
+          comparisonFixedElement.innerHTML = createResultsHTML(fixedResults, true);
+          
+          // 수정 완료 후 수정된 결과 탭 활성화
+          setActiveTab('fixed');
+          
+          // 이슈 카운트 표시
+          let originalIssueCount = 0;
+          let fixedIssueCount = 0;
+          
+          originalResults.forEach(result => {
+            originalIssueCount += result.issues.length;
           });
+          
+          fixedResults.forEach(result => {
+            fixedIssueCount += result.issues.length;
+          });
+          
+          const fixedCount = originalIssueCount - fixedIssueCount;
+          searchCountElement.textContent = `${originalIssueCount}개 이슈 중 ${fixedCount}개가 수정되었습니다. (${Math.round(fixedCount / originalIssueCount * 100)}% 개선)`;
+        }
+        
+        // 자동 수정 실패
+        else if (msg.type === 'fix-failed') {
+          statusElement.style.display = 'none';
+          showAlert(msg.message);
+          fixButton.style.display = 'block';
+        }
+        
+        // 이슈 없음
+        else if (msg.type === 'no-issues') {
+          statusElement.style.display = 'none';
+          showSuccess(msg.message);
+          fixButton.style.display = 'none';
+        }
+        
+        // 선택된 노드가 없는 경우
+        else if (msg.type === 'no-selection') {
+          statusElement.style.display = 'none';
+          showAlert(msg.message);
+        }
+        
+        // 노드 포커스 결과
+        else if (msg.type === 'node-focused') {
+          // 필요한 경우 여기에 추가 로직 구현
         }
       };
+      
+      // 초기 실행을 위한 함수 정의
+      function focusNode(nodeId) {
+        parent.postMessage({ 
+          pluginMessage: { 
+            type: 'focus-node',
+            nodeId
+          } 
+        }, '*');
+      }
     </script>
   </body>
 </html> 
