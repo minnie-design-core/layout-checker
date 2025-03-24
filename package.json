@@ -1,0 +1,16 @@
+{
+  "name": "auto-layout-checker",
+  "version": "1.0.0",
+  "description": "오토 레이아웃 검사기",
+  "main": "code.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && cp src/ui.html dist/",
+    "watch": "tsc -p tsconfig.json --watch"
+  },
+  "author": "Minnie",
+  "license": "MIT",
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.82.0",
+    "typescript": "^5.3.0"
+  }
+} 

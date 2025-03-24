@@ -1,0 +1,356 @@
+<html>
+  <head>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 16px;
+        margin: 0;
+        color: #333;
+      }
+      
+      h2 {
+        margin-top: 0;
+        margin-bottom: 16px;
+        font-size: 16px;
+      }
+      
+      button {
+        border-radius: 5px;
+        background: #18A0FB;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        margin-bottom: 16px;
+        cursor: pointer;
+        width: 100%;
+      }
+      
+      button:hover { 
+        background: #1089d9; 
+      }
+      
+      .results {
+        max-height: 360px;
+        overflow-y: auto;
+        border: 1px solid #e5e5e5;
+        border-radius: 4px;
+        padding: 0;
+      }
+      
+      .result-item {
+        padding: 12px;
+        border-bottom: 1px solid #e5e5e5;
+        cursor: pointer;
+      }
+      
+      .result-item:hover {
+        background-color: #f5f5f5;
+      }
+      
+      .result-item:last-child {
+        border-bottom: none;
+      }
+      
+      .node-info {
+        margin-bottom: 8px;
+      }
+      
+      .color-preview {
+        display: flex;
+        align-items: center;
+        margin-top: 4px;
+      }
+      
+      .color-box {
+        width: 20px;
+        height: 20px;
+        margin-right: 8px;
+        border: 1px solid #e0e0e0;
+        border-radius: 2px;
+      }
+      
+      .color-value {
+        font-family: monospace;
+        font-size: 12px;
+      }
+      
+      .node-type {
+        font-size: 12px;
+        color: #666;
+      }
+      
+      .no-results {
+        padding: 12px;
+        text-align: center;
+        color: #999;
+      }
+      
+      .searching {
+        text-align: center;
+        padding: 12px;
+        color: #666;
+      }
+      
+      .info-text {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 16px;
+        line-height: 1.4;
+      }
+      
+      .options {
+        margin-bottom: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      .checkbox-container {
+        display: flex;
+        align-items: center;
+      }
+      
+      .checkbox-container input[type="checkbox"] {
+        margin-right: 6px;
+      }
+      
+      .checkbox-label {
+        font-size: 13px;
+        color: #333;
+      }
+      
+      .hidden-node {
+        opacity: 0.5;
+      }
+      
+      .visible-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 5px;
+      }
+      
+      .visible-yes {
+        background-color: #3eca7a;
+      }
+      
+      .visible-no {
+        background-color: #f24822;
+      }
+      
+      .alert {
+        padding: 12px;
+        background-color: #fff4e5;
+        border-radius: 4px;
+        margin-bottom: 16px;
+        border-left: 4px solid #ffaa00;
+        font-size: 13px;
+      }
+      
+      .search-count {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>디자인 시스템 비준수 컬러 검색</h2>
+    <div class="info-text">
+      Variable이 적용되지 않은 컬러 노드만 찾아 표시합니다. 이 노드들은 디자인 시스템에 정의된 컬러 토큰을 사용하지 않고 있어 일관성에 문제가 있을 수 있습니다.
+    </div>
+    
+    <div class="options">
+      <div class="checkbox-container">
+        <input type="checkbox" id="exclude-hidden" checked>
+        <label for="exclude-hidden" class="checkbox-label">숨겨진 노드 제외</label>
+      </div>
+      
+      <div class="checkbox-container">
+        <input type="checkbox" id="selected-only">
+        <label for="selected-only" class="checkbox-label">선택한 노드만 검사 (및 하위 노드 포함)</label>
+      </div>
+    </div>
+    
+    <button id="search-btn">비준수 컬러 노드 검색</button>
+    
+    <div id="alert" class="alert" style="display: none;"></div>
+    
+    <div id="status" class="searching" style="display: none;">
+      Variable이 적용되지 않은 컬러 노드 검색 중...
+    </div>
+    
+    <div id="results" class="results" style="display: none;">
+      <!-- 검색 결과가 여기에 표시됩니다 -->
+    </div>
+    
+    <div id="search-count" class="search-count" style="display: none;"></div>
+    
+    <script>
+      // DOM 요소 참조
+      const searchButton = document.getElementById('search-btn');
+      const statusElement = document.getElementById('status');
+      const resultsElement = document.getElementById('results');
+      const alertElement = document.getElementById('alert');
+      const searchCountElement = document.getElementById('search-count');
+      const excludeHiddenCheckbox = document.getElementById('exclude-hidden');
+      const selectedOnlyCheckbox = document.getElementById('selected-only');
+      
+      // RGB 값을 HEX 문자열로 변환하는 함수
+      function rgbToHex(r, g, b) {
+        r = Math.round(r * 255);
+        g = Math.round(g * 255);
+        b = Math.round(b * 255);
+        return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+      }
+      
+      // 경고 메시지 표시
+      function showAlert(message) {
+        alertElement.textContent = message;
+        alertElement.style.display = 'block';
+        
+        // 3초 후 알림 숨기기
+        setTimeout(() => {
+          alertElement.style.display = 'none';
+        }, 3000);
+      }
+      
+      // 컬러 노드 검색 시작
+      searchButton.onclick = () => {
+        statusElement.style.display = 'block';
+        resultsElement.style.display = 'none';
+        searchCountElement.style.display = 'none';
+        alertElement.style.display = 'none';
+        
+        // 옵션 값 가져오기
+        const excludeHidden = excludeHiddenCheckbox.checked;
+        const selectedNodesOnly = selectedOnlyCheckbox.checked;
+        
+        // 부모 프레임(Figma)에 메시지 전송
+        parent.postMessage({ 
+          pluginMessage: { 
+            type: 'search-color-nodes',
+            excludeHidden: excludeHidden,
+            selectedNodesOnly: selectedNodesOnly
+          } 
+        }, '*');
+      };
+      
+      // 특정 노드에 포커스하는 함수
+      function focusNode(nodeId) {
+        parent.postMessage({ 
+          pluginMessage: { 
+            type: 'focus-node',
+            nodeId
+          } 
+        }, '*');
+      }
+      
+      // 노드의 컬러 프리뷰 HTML 생성
+      function createColorPreviewHTML(color) {
+        const hexColor = rgbToHex(color.r, color.g, color.b);
+        const rgbValues = `R: ${Math.round(color.r * 255)}, G: ${Math.round(color.g * 255)}, B: ${Math.round(color.b * 255)}`;
+        const opacity = color.opacity !== undefined ? `, 불투명도: ${Math.round(color.opacity * 100)}%` : '';
+        
+        return `
+          <div class="color-preview">
+            <div class="color-box" style="background-color: ${hexColor}; opacity: ${color.opacity || 1}"></div>
+            <div class="color-value">${hexColor} (${rgbValues}${opacity})</div>
+          </div>
+        `;
+      }
+      
+      // Figma로부터 메시지 수신
+      window.onmessage = (event) => {
+        const message = event.data.pluginMessage;
+        
+        if (message.type === 'no-selection') {
+          // 선택된 노드가 없는 경우 알림
+          statusElement.style.display = 'none';
+          showAlert(message.message);
+          return;
+        }
+        
+        else if (message.type === 'color-nodes-result') {
+          statusElement.style.display = 'none';
+          resultsElement.style.display = 'block';
+          
+          const nodes = message.nodes;
+          const isSelectedNodesOnly = message.selectedNodesOnly;
+          
+          // 검색 결과 카운트 표시
+          searchCountElement.style.display = 'block';
+          const searchScope = isSelectedNodesOnly ? '선택한 노드에서' : '현재 페이지에서';
+          searchCountElement.textContent = `${searchScope} ${nodes.length}개의 비준수 컬러 노드를 찾았습니다.`;
+          
+          if (nodes.length === 0) {
+            const noResultsMessage = isSelectedNodesOnly 
+              ? '선택한 노드에서 Variable이 적용되지 않은 컬러 노드가 없습니다.'
+              : 'Variable이 적용되지 않은 컬러 노드가 없습니다. 모든 컬러가 디자인 시스템을 준수하고 있습니다!';
+            
+            resultsElement.innerHTML = `<div class="no-results">${noResultsMessage}</div>`;
+            return;
+          }
+          
+          // 결과 목록 생성
+          let resultsHTML = '';
+          
+          nodes.forEach(node => {
+            let colorPreviewsHTML = '';
+            
+            node.colors.forEach(colorInfo => {
+              const typeLabel = colorInfo.type === 'fill' ? '채우기' : '테두리';
+              colorPreviewsHTML += `
+                <div>
+                  <small>${typeLabel} #${colorInfo.index + 1}</small>
+                  ${createColorPreviewHTML(colorInfo.color)}
+                </div>
+              `;
+            });
+            
+            // 노드 가시성 상태에 따라 클래스 추가
+            const visibilityClass = node.visible ? '' : 'hidden-node';
+            const visibilityIndicator = node.visible ? 
+              '<span class="visible-indicator visible-yes" title="보이는 노드"></span>' : 
+              '<span class="visible-indicator visible-no" title="숨겨진 노드"></span>';
+            
+            resultsHTML += `
+              <div class="result-item ${visibilityClass}" data-node-id="${node.id}">
+                <div class="node-info">
+                  <strong>${visibilityIndicator}${node.name}</strong>
+                  <div class="node-type">${node.type}</div>
+                </div>
+                ${colorPreviewsHTML}
+              </div>
+            `;
+          });
+          
+          resultsElement.innerHTML = resultsHTML;
+          
+          // 노드 클릭 이벤트 리스너 추가
+          document.querySelectorAll('.result-item').forEach(item => {
+            item.addEventListener('click', () => {
+              const nodeId = item.getAttribute('data-node-id');
+              focusNode(nodeId);
+            });
+          });
+        }
+        
+        else if (message.type === 'node-focused') {
+          // 포커스된 노드 표시 (옵션)
+          const nodeId = message.nodeId;
+          document.querySelectorAll('.result-item').forEach(item => {
+            if (item.getAttribute('data-node-id') === nodeId) {
+              item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              item.style.backgroundColor = '#e6f7ff';
+              setTimeout(() => {
+                item.style.backgroundColor = '';
+              }, 1500);
+            }
+          });
+        }
+      };
+    </script>
+  </body>
+</html> 
